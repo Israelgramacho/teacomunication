@@ -4,23 +4,24 @@ const app = express();
 
 const PORT = process.env.PORT || 10000;
 
-// Servir arquivos estáticos
 app.use(express.static('.', {
   extensions: ['html'],
   index: 'index.html'
 }));
 
-// Endpoint TTS online (Streamlabs Polly)
+// Endpoint TTS usando Google Translate TTS (funciona em muitos navegadores)
 app.get('/tts', (req, res) => {
   const { text = 'Olá' } = req.query;
-  const voice = 'Ricardo'; // Voz masculina em PT-BR
+  const voice = 'pt-BR'; // Idioma português do Brasil
 
   if (!text || text.length > 200) {
     return res.status(400).send('Texto inválido ou muito longo.');
   }
 
-  const encodedText = encodeURIComponent(text);
-  const ttsUrl = `https://streamlabs.com/polly/speak?text=${encodedText}&voice=${voice}`;
+  // URL do Google Translate TTS (não oficial, mas funciona em muitos casos)
+  const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${voice}&q=${encodeURIComponent(text)}&client=tw-ob`;
+
+  // Redireciona para o áudio
   res.redirect(302, ttsUrl);
 });
 
