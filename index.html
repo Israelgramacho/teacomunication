@@ -3,78 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <title>TTS Teste</title>
-<style>
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 100px);
-    gap: 10px;
-    margin-top: 20px;
-  }
-  .btnCard {
-    width: 100px;
-    height: 100px;
-    background: #eee;
-    border: 1px solid #777;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    cursor: pointer;
-    font-size: 12px;
-    text-align: center;
-  }
-  .btnCard img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-</style>
 </head>
 <body>
 
 <h3>Digite um texto e clique para ouvir:</h3>
 
-<textarea id="texto" rows="3" cols="40">Oi, tudo bem?</textarea><br><br>
+<textarea id="texto" rows="4" cols="40">Oi, tudo bem?</textarea><br><br>
 
 <label for="voz">Voz:</label>
-<select id="voz"></select>
+<select id="voz"></select><br><br>
 
 <label for="pitch">Pitch (tom):</label>
 <input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
+<span id="pitchVal">1</span><br><br>
 
-<button onclick="falarTexto()">Falar</button>
-
-<hr>
-
-<h3>Grade de 9 botões (clique para configurar e falar)</h3>
-<div class="grid" id="grid"></div>
-
-<input type="file" id="filePicker" accept="image/*" style="display:none">
+<button onclick="falar()">Falar</button>
 
 <script>
-let selectedButtonIndex = null;
-let frases = Array(9).fill("Clique para editar");
-let imagens = Array(9).fill(null);
 let availableVoices = [];
 
 function loadVoices() {
   availableVoices = speechSynthesis.getVoices();
-
   const vozSelect = document.getElementById("voz");
   vozSelect.innerHTML = "";
 
+  // Filtrar apenas PT-BR e EN-US disponíveis
   const filtradas = availableVoices.filter(v =>
     v.lang.includes("pt") || v.lang.includes("en")
   );
 
-  filtradas.forEach((v, i) => {
+  filtradas.forEach(v => {
     const opt = document.createElement("option");
     opt.value = v.name;
     opt.textContent = `${v.name} (${v.lang})`;
     vozSelect.appendChild(opt);
   });
 
-  // Se tiver voz pt-BR, seleciona automaticamente
+  // Seleciona automaticamente uma voz PT-BR, se existir
   const ptIndex = filtradas.findIndex(v => v.lang.includes("pt-BR"));
   if (ptIndex >= 0) vozSelect.selectedIndex = ptIndex;
 }
@@ -84,68 +49,24 @@ if ("speechSynthesis" in window) {
   loadVoices();
 }
 
-function falarTexto(text = null) {
-  const frase = text ?? document.getElementById("texto").value;
+document.getElementById("pitch").addEventListener("input", (e) => {
+  document.getElementById("pitchVal").innerText = e.target.value;
+});
+
+function falar() {
+  const texto = document.getElementById("texto").value;
   const pitch = parseFloat(document.getElementById("pitch").value);
   const vozName = document.getElementById("voz").value;
 
-  const fala = new SpeechSynthesisUtterance(frase);
+  const fala = new SpeechSynthesisUtterance(texto);
   fala.pitch = pitch;
 
-  const v = availableVoices.find(v => v.name === vozName);
-  if (v) fala.voice = v;
+  const voice = availableVoices.find(v => v.name === vozName);
+  if (voice) fala.voice = voice;
 
+  speechSynthesis.cancel();
   speechSynthesis.speak(fala);
 }
-
-function criarGrid() {
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-
-  for (let i = 0; i < 9; i++) {
-    const div = document.createElement("div");
-    div.className = "btnCard";
-
-    if (imagens[i]) {
-      const img = document.createElement("img");
-      img.src = imagens[i];
-      div.appendChild(img);
-    } else {
-      div.textContent = frases[i];
-    }
-
-    div.onclick = () => editarBotao(i);
-    grid.appendChild(div);
-  }
-}
-
-criarGrid();
-
-function editarBotao(index) {
-  selectedButtonIndex = index;
-  const novoTexto = prompt("Digite o texto para falar:", frases[index]);
-  if (novoTexto !== null) frases[index] = novoTexto;
-
-  const escolherImagem = confirm("Deseja escolher uma imagem?");
-  if (escolherImagem) {
-    document.getElementById("filePicker").click();
-  }
-
-  criarGrid();
-  falarTexto(frases[index]);
-}
-
-document.getElementById("filePicker").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    imagens[selectedButtonIndex] = ev.target.result;
-    criarGrid();
-  };
-  reader.readAsDataURL(file);
-});
 </script>
 
 </body>
