@@ -1,73 +1,360 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>TTS Teste</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Teste</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        #status.info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        #status.success {
+            background-color: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #a5d6a7;
+        }
+        #status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        #status.warning {
+            background-color: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffb74d;
+        }
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #pitch {
+            flex: 1;
+        }
+    </style>
 </head>
 <body>
+    <h2>TTS Teste - Text to Speech</h2>
+    
+    <div>
+        <label for="texto"><strong>Texto para falar:</strong></label><br>
+        <textarea id="texto" rows="4" placeholder="Digite ou cole o texto aqui...">Oi, tudo bem? Este é um teste de síntese de voz.</textarea>
+    </div>
+    
+    <br>
+    
+    <div>
+        <label for="voz"><strong>Voz:</strong></label>
+        <select id="voz">
+            <option value="">Carregando vozes...</option>
+        </select>
+    </div>
+    
+    <br>
+    
+    <div>
+        <label for="pitch"><strong>Pitch (Tom):</strong></label>
+        <div class="range-container">
+            <input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
+            <span id="pitchVal">1.0</span>
+        </div>
+    </div>
+    
+    <br>
+    
+    <div>
+        <label for="rate"><strong>Velocidade:</strong></label>
+        <div class="range-container">
+            <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1">
+            <span id="rateVal">1.0</span>
+        </div>
+    </div>
+    
+    <br>
+    
+    <div>
+        <label for="volume"><strong>Volume:</strong></label>
+        <div class="range-container">
+            <input type="range" id="volume" min="0" max="1" value="1" step="0.1">
+            <span id="volumeVal">1.0</span>
+        </div>
+    </div>
+    
+    <br>
+    
+    <button id="btnFalar" onclick="falar()">🔊 Falar</button>
+    <button id="btnParar" onclick="parar()" style="background-color: #f44336; margin-left: 10px;">⏹ Parar</button>
+    
+    <div id="status"></div>
 
-<h3>Digite um texto e clique para ouvir:</h3>
+    <script>
+        let availableVoices = [];
+        let currentUtterance = null;
+        let voicesLoadAttempts = 0;
+        const maxLoadAttempts = 10;
 
-<textarea id="texto" rows="4" cols="40">Oi, tudo bem?</textarea><br><br>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
 
-<label for="voz">Voz:</label>
-<select id="voz"></select><br><br>
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) {
+                showStatus('❌ Seu navegador não suporta síntese de voz.', 'error');
+                document.getElementById('voz').innerHTML = '<option value="">API não disponível</option>';
+                return;
+            }
 
-<label for="pitch">Pitch (tom):</label>
-<input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
-<span id="pitchVal">1</span><br><br>
+            availableVoices = speechSynthesis.getVoices();
+            const vozSelect = document.getElementById('voz');
+            
+            if (availableVoices.length === 0) {
+                voicesLoadAttempts++;
+                if (voicesLoadAttempts < maxLoadAttempts) {
+                    setTimeout(loadVoices, 200);
+                    showStatus('⏳ Carregando vozes...', 'warning');
+                } else {
+                    vozSelect.innerHTML = '<option value="">Nenhuma voz disponível</option>';
+                    showStatus('⚠️ Não foi possível carregar as vozes. Tente recarregar a página.', 'warning');
+                }
+                return;
+            }
 
-<button onclick="falar()">Falar</button>
+            vozSelect.innerHTML = '';
+            
+            // Filtrar apenas PT-BR e EN-US disponíveis
+            const filtradas = availableVoices.filter(v =>
+                v.lang.includes("pt") || v.lang.includes("en")
+            );
 
-<script>
-let availableVoices = [];
+            if (filtradas.length === 0) {
+                // Se não houver filtradas, mostra todas
+                availableVoices.forEach(v => {
+                    const opt = document.createElement("option");
+                    opt.value = v.name;
+                    opt.textContent = `${v.name} (${v.lang})`;
+                    vozSelect.appendChild(opt);
+                });
+            } else {
+                filtradas.forEach(v => {
+                    const opt = document.createElement("option");
+                    opt.value = v.name;
+                    opt.textContent = `${v.name} (${v.lang})`;
+                    vozSelect.appendChild(opt);
+                });
+                
+                // Seleciona automaticamente uma voz PT-BR, se existir
+                const ptIndex = filtradas.findIndex(v => v.lang.includes("pt-BR"));
+                if (ptIndex >= 0) {
+                    vozSelect.selectedIndex = ptIndex;
+                }
+            }
+            
+            showStatus(`✅ ${availableVoices.length} vozes carregadas (${filtradas.length || availableVoices.length} disponíveis)`, 'success');
+            voicesLoadAttempts = 0;
+        }
 
-function loadVoices() {
-  availableVoices = speechSynthesis.getVoices();
-  const vozSelect = document.getElementById("voz");
-  vozSelect.innerHTML = "";
+        // Inicializar carregamento de vozes
+        if ("speechSynthesis" in window) {
+            // Tenta carregar imediatamente
+            loadVoices();
+            
+            // Listener para quando as vozes mudarem
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            
+            // Tenta novamente após um delay caso não tenha carregado
+            setTimeout(() => {
+                if (availableVoices.length === 0) {
+                    loadVoices();
+                }
+            }, 500);
+        } else {
+            showStatus('❌ Seu navegador não suporta síntese de voz (Web Speech API).', 'error');
+        }
 
-  // Filtrar apenas PT-BR e EN-US disponíveis
-  const filtradas = availableVoices.filter(v =>
-    v.lang.includes("pt") || v.lang.includes("en")
-  );
+        // Atualizar valores dos sliders
+        document.getElementById("pitch").addEventListener("input", (e) => {
+            document.getElementById("pitchVal").textContent = parseFloat(e.target.value).toFixed(1);
+        });
 
-  filtradas.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v.name;
-    opt.textContent = `${v.name} (${v.lang})`;
-    vozSelect.appendChild(opt);
-  });
+        document.getElementById("rate").addEventListener("input", (e) => {
+            document.getElementById("rateVal").textContent = parseFloat(e.target.value).toFixed(1);
+        });
 
-  // Seleciona automaticamente uma voz PT-BR, se existir
-  const ptIndex = filtradas.findIndex(v => v.lang.includes("pt-BR"));
-  if (ptIndex >= 0) vozSelect.selectedIndex = ptIndex;
-}
+        document.getElementById("volume").addEventListener("input", (e) => {
+            document.getElementById("volumeVal").textContent = parseFloat(e.target.value).toFixed(1);
+        });
 
-if ("speechSynthesis" in window) {
-  speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices();
-}
+        function falar() {
+            if (!('speechSynthesis' in window)) {
+                showStatus('❌ API de síntese de voz não disponível.', 'error');
+                return;
+            }
 
-document.getElementById("pitch").addEventListener("input", (e) => {
-  document.getElementById("pitchVal").innerText = e.target.value;
-});
+            const texto = document.getElementById("texto").value.trim();
+            
+            if (!texto) {
+                showStatus('⚠️ Por favor, digite um texto para falar.', 'warning');
+                return;
+            }
 
-function falar() {
-  const texto = document.getElementById("texto").value;
-  const pitch = parseFloat(document.getElementById("pitch").value);
-  const vozName = document.getElementById("voz").value;
+            try {
+                const pitch = parseFloat(document.getElementById("pitch").value);
+                const rate = parseFloat(document.getElementById("rate").value);
+                const volume = parseFloat(document.getElementById("volume").value);
+                const vozName = document.getElementById("voz").value;
 
-  const fala = new SpeechSynthesisUtterance(texto);
-  fala.pitch = pitch;
+                // Cancela qualquer fala anterior
+                speechSynthesis.cancel();
 
-  const voice = availableVoices.find(v => v.name === vozName);
-  if (voice) fala.voice = voice;
+                const fala = new SpeechSynthesisUtterance(texto);
+                fala.pitch = pitch;
+                fala.rate = rate;
+                fala.volume = volume;
 
-  speechSynthesis.cancel();
-  speechSynthesis.speak(fala);
-}
-</script>
+                const voice = availableVoices.find(v => v.name === vozName);
+                if (voice) {
+                    fala.voice = voice;
+                    fala.lang = voice.lang;
+                }
 
+                // Eventos da fala
+                fala.onstart = () => {
+                    showStatus('🔊 Falando...', 'info');
+                    document.getElementById('btnFalar').disabled = true;
+                    document.getElementById('btnParar').disabled = false;
+                };
+
+                fala.onend = () => {
+                    showStatus('✅ Fala concluída.', 'success');
+                    document.getElementById('btnFalar').disabled = false;
+                    document.getElementById('btnParar').disabled = true;
+                    currentUtterance = null;
+                };
+
+                fala.onerror = (event) => {
+                    let errorMsg = '❌ Erro ao falar: ';
+                    switch(event.error) {
+                        case 'network':
+                            errorMsg += 'Erro de rede.';
+                            break;
+                        case 'synthesis':
+                            errorMsg += 'Erro na síntese.';
+                            break;
+                        case 'synthesis-unavailable':
+                            errorMsg += 'Síntese não disponível.';
+                            break;
+                        case 'text-too-long':
+                            errorMsg += 'Texto muito longo.';
+                            break;
+                        case 'invalid-argument':
+                            errorMsg += 'Argumento inválido.';
+                            break;
+                        case 'not-allowed':
+                            errorMsg += 'Permissão negada. Verifique as configurações de áudio.';
+                            break;
+                        default:
+                            errorMsg += 'Erro desconhecido.';
+                    }
+                    showStatus(errorMsg, 'error');
+                    document.getElementById('btnFalar').disabled = false;
+                    document.getElementById('btnParar').disabled = true;
+                    currentUtterance = null;
+                };
+
+                fala.onpause = () => {
+                    showStatus('⏸ Pausado.', 'info');
+                };
+
+                fala.onresume = () => {
+                    showStatus('▶ Continuando...', 'info');
+                };
+
+                currentUtterance = fala;
+                speechSynthesis.speak(fala);
+                
+            } catch (error) {
+                showStatus(`❌ Erro: ${error.message}`, 'error');
+                console.error('Erro ao iniciar fala:', error);
+            }
+        }
+
+        function parar() {
+            if (!('speechSynthesis' in window)) {
+                return;
+            }
+            
+            try {
+                speechSynthesis.cancel();
+                showStatus('⏹ Fala interrompida.', 'info');
+                document.getElementById('btnFalar').disabled = false;
+                document.getElementById('btnParar').disabled = true;
+                currentUtterance = null;
+            } catch (error) {
+                showStatus(`❌ Erro ao parar: ${error.message}`, 'error');
+                console.error('Erro ao parar fala:', error);
+            }
+        }
+
+        // Permitir parar com Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                parar();
+            }
+        });
+    </script>
 </body>
 </html>
