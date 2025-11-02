@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicação Alternativa - Tecnologia Assistiva</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-comments" aria-hidden="true"></i> Comunicação Alternativa</h1>
+            <p>Sistema de Comunicação Aumentativa e Alternativa (CAA) para pessoas com autismo e dificuldades de fala</p>
+        </header>
+        
+        <button id="backButton" class="back-button" aria-label="Voltar para categorias principais">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Voltar para Categorias Principais
+        </button>
+        
+        <div class="app-container">
+            <button id="toggleControlsBtn" class="controls-toggle-btn" aria-label="Mostrar/ocultar ajustes de voz" title="Ajustes de Voz">
+                <i class="fas fa-sliders-h" aria-hidden="true"></i>
+            </button>
+            <div class="controls controls-hidden" id="voiceControls">
+                <div class="control-group">
+                    <label for="voiceSelect"><i class="fas fa-microphone" aria-hidden="true"></i> Voz:</label>
+                    <select id="voiceSelect" aria-label="Selecionar voz">
+                        <option value="">Carregando vozes...</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="speedControl"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Velocidade:</label>
+                    <select id="speedControl" aria-label="Ajustar velocidade da fala">
+                        <option value="0.8">Lenta</option>
+                        <option value="1.0" selected>Normal</option>
+                        <option value="1.2">Rápida</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="toneControl"><i class="fas fa-music" aria-hidden="true"></i> Tom:</label>
+                    <select id="toneControl" aria-label="Ajustar tom da voz">
+                        <option value="0.5">Muito Baixo</option>
+                        <option value="0.75">Baixo</option>
+                        <option value="1.0" selected>Normal</option>
+                        <option value="1.25">Alto</option>
+                        <option value="1.5">Muito Alto</option>
+                    </select>
+                </div>
+                
+                <button id="settingsButton" class="settings-btn" aria-label="Configurações avançadas" title="Configurações">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
+                </button>
+                <button id="hideControlsBtn" class="hide-controls-btn" aria-label="Ocultar ajustes" title="Ocultar">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            
+            <div class="categories-header" style="display: flex; align-items: center; margin: 0 0 16px 0; gap: 12px; position: relative;">
+                <button id="toggleCreateCategoryBtn" class="create-category-toggle-btn" aria-label="Mostrar botão criar categoria" title="Mostrar Criar Categoria">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+                <div id="createCategoryWrapper" class="create-category-wrapper create-category-hidden">
+                    <button id="createCategoryBtn" class="create-category-btn" aria-label="Criar nova categoria">
+                        <i class="fas fa-plus-circle" style="font-size: 1.2em; margin-right: 6px;"></i>
+                        Criar Categoria
+                    </button>
+                    <button id="hideCreateCategoryBtn" class="hide-create-category-btn" aria-label="Ocultar" title="Ocultar">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <button id="toggleDeleteModeBtn" class="delete-mode-toggle-btn" aria-label="Modo exclusão" title="Excluir Categorias">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+                <button id="deleteSelectedCategoriesBtn" class="delete-selected-btn" style="display: none;" aria-label="Excluir categorias selecionadas" title="Excluir Selecionados">
+                    <i class="fas fa-trash"></i> Excluir Selecionados (<span id="selectedCategoriesCount">0</span>)
+                </button>
+                <button id="toggleDeleteSubcategoryBtn" class="delete-mode-toggle-btn" style="display: none;" aria-label="Modo exclusão subcategorias" title="Excluir Falas">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                </button>
+                <button id="deleteSelectedSubcategoriesBtn" class="delete-selected-btn" style="display: none;" aria-label="Excluir falas selecionadas" title="Excluir Selecionados">
+                    <i class="fas fa-trash"></i> Excluir Selecionados (<span id="selectedSubcategoriesCount">0</span>)
+                </button>
+            </div>
+            
+            <div class="categories" id="categoriesContainer" role="grid" aria-label="Categorias de comunicação">
+                <!-- Categorias serão inseridas aqui via JavaScript -->
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" aria-hidden="true"></div>
+                <span id="statusText">Pronto para uso</span>
+            </div>
+            <div>
+                <span><i class="fas fa-heartbeat" aria-hidden="true"></i> Tecnologia Assistiva para Inclusão</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Carregando vozes...</p>
+    </div>
+
+    <!-- Error message -->
+    <div id="errorMessage" class="error-message" style="display: none;" role="alert">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+        <span id="errorText"></span>
+        <button id="closeError" aria-label="Fechar mensagem de erro">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
