@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de Comunicação Aumentativa e Alternativa (CAA) para pessoas com autismo e dificuldades de fala">
+    <title>Comunicação Alternativa - Tecnologia Assistiva</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-comments" aria-hidden="true"></i> Comunicação Alternativa</h1>
+            <p>Sistema de Comunicação Aumentativa e Alternativa (CAA) para pessoas com autismo e dificuldades de fala</p>
+        </header>
+        
+        <button id="backButton" class="back-button" aria-label="Voltar para categorias principais">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Voltar para Categorias Principais
+        </button>
+        
+        <div class="app-container">
+            <div class="categories-header" style="display: flex; align-items: center; margin: 0 0 16px 0; gap: 12px; position: relative; flex-wrap: wrap;">
+                <button id="settingsButton" class="settings-btn-inline" aria-label="Configurações avançadas" title="Configurações">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
+                </button>
+                <button id="togglePresentationModeBtn" class="delete-mode-toggle-btn" aria-label="Modo apresentação" title="Modo Apresentação">
+                    <i class="fas fa-expand" aria-hidden="true"></i>
+                </button>
+                <button id="toggleCreateCategoryBtn" class="create-category-toggle-btn" aria-label="Mostrar botão criar categoria" title="Mostrar Criar Categoria">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+                <div id="createCategoryWrapper" class="create-category-wrapper create-category-hidden">
+                    <button id="createCategoryBtn" class="create-category-btn" aria-label="Criar nova categoria">
+                        <i class="fas fa-plus-circle" style="font-size: 1.2em; margin-right: 6px;"></i>
+                        Criar Categoria
+                    </button>
+                    <button id="hideCreateCategoryBtn" class="hide-create-category-btn" aria-label="Ocultar" title="Ocultar">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <button id="toggleEditModeBtn" class="edit-mode-toggle-btn" aria-label="Modo edição" title="Editar Categorias">
+                    <i class="fas fa-edit" aria-hidden="true"></i>
+                </button>
+                <button id="editSelectedCategoriesBtn" class="edit-selected-btn" style="display: none;" aria-label="Editar categorias selecionadas" title="Editar Selecionados">
+                    <i class="fas fa-edit"></i> Editar Selecionados (<span id="selectedCategoriesCountEdit">0</span>)
+                </button>
+                <button id="toggleDeleteModeBtn" class="delete-mode-toggle-btn" aria-label="Modo exclusão" title="Excluir Categorias">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+                <button id="deleteSelectedCategoriesBtn" class="delete-selected-btn" style="display: none;" aria-label="Excluir categorias selecionadas" title="Excluir Selecionados">
+                    <i class="fas fa-trash"></i> Excluir Selecionados (<span id="selectedCategoriesCount">0</span>)
+                </button>
+                <button id="toggleEditSubcategoryBtn" class="edit-mode-toggle-btn" style="display: none;" aria-label="Modo edição subcategorias" title="Editar Falas">
+                    <i class="fas fa-edit" aria-hidden="true"></i>
+                </button>
+                <button id="editSelectedSubcategoriesBtn" class="edit-selected-btn" style="display: none;" aria-label="Editar falas selecionadas" title="Editar Selecionados">
+                    <i class="fas fa-edit"></i> Editar Selecionados (<span id="selectedSubcategoriesCountEdit">0</span>)
+                </button>
+                <button id="toggleDeleteSubcategoryBtn" class="delete-mode-toggle-btn" style="display: none;" aria-label="Modo exclusão subcategorias" title="Excluir Falas">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                </button>
+                <button id="deleteSelectedSubcategoriesBtn" class="delete-selected-btn" style="display: none;" aria-label="Excluir falas selecionadas" title="Excluir Selecionados">
+                    <i class="fas fa-trash"></i> Excluir Selecionados (<span id="selectedSubcategoriesCount">0</span>)
+                </button>
+            </div>
+            
+            <div class="categories" id="categoriesContainer" role="grid" aria-label="Categorias de comunicação">
+                <!-- Categorias serão inseridas aqui via JavaScript -->
+            </div>
+            
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" aria-hidden="true"></div>
+                <span id="statusText">Pronto para uso</span>
+            </div>
+            <div>
+                <span><i class="fas fa-heartbeat" aria-hidden="true"></i> Tecnologia Assistiva para Inclusão</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="statsPanel" class="stats-panel" aria-hidden="true">
+        <div class="stats-panel-inner">
+            <div class="stats-panel-header">
+                <div>
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <h2 id="statsPanelTitle">Estatísticas</h2>
+                    <p id="statsPanelSubtitle" class="stats-panel-subtitle"></p>
+                </div>
+                <button id="closeStatsPanel" class="stats-panel-close" aria-label="Fechar painel de estatísticas">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div id="statsPanelFilters" class="stats-panel-filters" role="tablist"></div>
+            <div class="stats-panel-content"></div>
+        </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Carregando vozes...</p>
+    </div>
+
+    <!-- Error message -->
+    <div id="errorMessage" class="error-message" style="display: none;" role="alert">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+        <span id="errorText"></span>
+        <button id="closeError" aria-label="Fechar mensagem de erro">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Registro do Service Worker para modo offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swPath = window.location.pathname.includes('/') && window.location.pathname !== '/' 
+                    ? '../sw.js' 
+                    : './sw.js';
+                navigator.serviceWorker.register(swPath)
+                    .then((registration) => {
+                        console.log('Service Worker registrado com sucesso:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Erro ao registrar Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
