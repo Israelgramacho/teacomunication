@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Exportação/Importação - JSON e CSV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .data-display {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        input[type="file"]:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Exportação/Importação</h1>
+        <p class="subtitle">Teste de compatibilidade com DownloadListener do app Android</p>
+
+        <!-- Seção de Dados -->
+        <div class="section">
+            <h2>📊 Dados de Teste</h2>
+            <div class="data-display" id="dataDisplay">{
+  "usuarios": [
+    {"id": 1, "nome": "João Silva", "email": "joao@example.com"},
+    {"id": 2, "nome": "Maria Santos", "email": "maria@example.com"},
+    {"id": 3, "nome": "Pedro Oliveira", "email": "pedro@example.com"}
+  ],
+  "total": 3,
+  "dataExportacao": "2024-01-15T10:30:00Z"
+}</div>
+        </div>
+
+        <!-- Seção de Exportação -->
+        <div class="section">
+            <h2>📤 Exportar Dados</h2>
+            <div class="button-group">
+                <button onclick="exportarJSON()">Exportar como JSON</button>
+                <button onclick="exportarCSV()">Exportar como CSV</button>
+            </div>
+            <div id="exportStatus"></div>
+        </div>
+
+        <!-- Seção de Importação -->
+        <div class="section">
+            <h2>📥 Importar Dados</h2>
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".json,.csv" onchange="importarArquivo(event)">
+            </div>
+            <div id="importStatus"></div>
+        </div>
+
+        <!-- Seção de Debug -->
+        <div class="section">
+            <h2>🔍 Logs de Debug</h2>
+            <button onclick="limparLogs()" style="margin-bottom: 10px; background: #6c757d;">Limpar Logs</button>
+            <div class="data-display" id="debugLogs" style="max-height: 200px; font-size: 11px; background: #1e1e1e; color: #d4d4d4;">
+                <div style="color: #888;">Aguardando ação... Os logs aparecerão aqui quando você importar um arquivo.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados de exemplo
+        let dados = {
+            usuarios: [
+                {id: 1, nome: "João Silva", email: "joao@example.com"},
+                {id: 2, nome: "Maria Santos", email: "maria@example.com"},
+                {id: 3, nome: "Pedro Oliveira", email: "pedro@example.com"}
+            ],
+            total: 3,
+            dataExportacao: new Date().toISOString()
+        };
+
+        // Função para atualizar a exibição dos dados
+        function atualizarDisplay() {
+            document.getElementById('dataDisplay').textContent = JSON.stringify(dados, null, 2);
+        }
+
+        // Função auxiliar para forçar download como arquivo (não imagem) no Android
+        function forcarDownload(blob, fileName, mimeType) {
+            adicionarLog(`Iniciando download: ${fileName} (${blob.size} bytes, ${mimeType})`, 'debug');
+            
+            // Verificar se o blob tem conteúdo
+            if (blob.size === 0) {
+                adicionarLog('ERRO: Blob está vazio na função forcarDownload!', 'error');
+                return false;
+            }
+            
+            // Método 1: Usar FileReader para ler o blob e criar data URL (mais confiável)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    adicionarLog('Conteúdo do blob lido, criando data URL...', 'info');
+                    const dataUrl = e.target.result;
+                    adicionarLog(`Data URL criada: ${dataUrl.length} caracteres`, 'debug');
+                    
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = fileName;
+                    link.style.display = 'none';
+                    link.setAttribute('download', fileName);
+                    link.setAttribute('type', mimeType);
+                    
+                    document.body.appendChild(link);
+                    adicionarLog('Link criado com data URL, disparando download...', 'info');
+                    
+                    // Disparar download
+                    if (link.click) {
+                        link.click();
+                    } else {
+                        const clickEvent = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        link.dispatchEvent(clickEvent);
+                    }
+                    
+                    adicionarLog('Download disparado via data URL', 'success');
+                    
+                    // Limpar após um tempo maior para garantir que o download iniciou
+                    setTimeout(() => {
+                        if (link.parentNode) {
+                            document.body.removeChild(link);
+                        }
+                    }, 2000);
+                } catch (error) {
+                    adicionarLog(`Erro ao usar data URL: ${error.message}`, 'error');
+                    // Tentar método alternativo
+                    tentarDownloadBlobURL(blob, fileName, mimeType);
+                }
+            };
+            
+            reader.onerror = function() {
+                adicionarLog('Erro ao ler blob com FileReader, tentando método alternativo...', 'warning');
+                tentarDownloadBlobURL(blob, fileName, mimeType);
+            };
+            
+            // Tentar ler como data URL primeiro
+            adicionarLog('Lendo blob com FileReader para criar data URL...', 'debug');
+            reader.readAsDataURL(blob);
+        }
+        
+        // Método alternativo usando blob URL
+        function tentarDownloadBlobURL(blob, fileName, mimeType) {
+            try {
+                adicionarLog('Tentando método alternativo: blob URL', 'debug');
+                const url = URL.createObjectURL(blob);
+                adicionarLog(`URL do blob criada: ${url.substring(0, 50)}...`, 'debug');
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                link.style.display = 'none';
+                link.setAttribute('download', fileName);
+                link.setAttribute('type', mimeType);
+                
+                document.body.appendChild(link);
+                adicionarLog('Link adicionado ao DOM, disparando click...', 'debug');
+                
+                if (link.click) {
+                    link.click();
+                } else {
+                    const clickEvent = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    link.dispatchEvent(clickEvent);
+                }
+                
+                adicionarLog('Click disparado via blob URL', 'info');
+                
+                // Aguardar mais tempo antes de revogar a URL
+                setTimeout(() => {
+                    if (link.parentNode) {
+                        document.body.removeChild(link);
+                    }
+                    URL.revokeObjectURL(url);
+                    adicionarLog('URL do blob revogada', 'debug');
+                }, 3000); // 3 segundos para dar tempo suficiente ao DownloadListener
+                
+                return true;
+            } catch (e) {
+                adicionarLog(`Método blob URL falhou: ${e.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Função para exportar como JSON
+        function exportarJSON() {
+            try {
+                adicionarLog('Iniciando exportação JSON...', 'debug');
+                
+                const jsonString = JSON.stringify(dados, null, 2);
+                adicionarLog(`JSON gerado: ${jsonString.length} caracteres`, 'info');
+                adicionarLog(`Preview: ${jsonString.substring(0, 100)}...`, 'debug');
+                
+                const fileName = 'dados-exportados.json';
+                
+                // Criar blob com tipo MIME explícito para arquivo (não imagem)
+                const blob = new Blob([jsonString], { 
+                    type: 'application/json;charset=utf-8'
+                });
+                
+                adicionarLog(`Blob criado: ${blob.size} bytes`, 'info');
+                
+                if (blob.size === 0) {
+                    adicionarLog('ERRO: Blob está vazio!', 'error');
+                    mostrarStatus('exportStatus', '❌ Erro: Blob está vazio', 'error');
+                    return;
+                }
+                
+                // Método compatível com DownloadListener do Android
+                if (typeof navigator !== 'undefined' && navigator.msSaveOrOpenBlob) {
+                    // Para IE/Edge
+                    adicionarLog('Usando msSaveOrOpenBlob (IE/Edge)', 'info');
+                    navigator.msSaveOrOpenBlob(blob, fileName);
+                } else {
+                    // Para Android WebView - usar função auxiliar que força download como arquivo
+                    adicionarLog('Usando método de download padrão', 'info');
+                    forcarDownload(blob, fileName, 'application/json');
+                }
+                
+                adicionarLog('Exportação JSON concluída', 'success');
+                mostrarStatus('exportStatus', '✅ Arquivo JSON exportado com sucesso!', 'success');
+            } catch (error) {
+                adicionarLog(`Erro ao exportar JSON: ${error.message}`, 'error');
+                adicionarLog(`Stack: ${error.stack}`, 'error');
+                mostrarStatus('exportStatus', '❌ Erro ao exportar JSON: ' + error.message, 'error');
+            }
+        }
+
+        // Função para exportar como CSV
+        function exportarCSV() {
+            try {
+                adicionarLog('Iniciando exportação CSV...', 'debug');
+                
+                // Converter dados para CSV
+                let csv = 'ID,Nome,Email\n';
+                dados.usuarios.forEach(usuario => {
+                    csv += `${usuario.id},"${usuario.nome}","${usuario.email}"\n`;
+                });
+                csv += `\nTotal,${dados.total}\n`;
+                csv += `Data Exportação,"${dados.dataExportacao}"\n`;
+
+                adicionarLog(`CSV gerado: ${csv.length} caracteres`, 'info');
+                adicionarLog(`Preview: ${csv.substring(0, 100)}...`, 'debug');
+
+                const fileName = 'dados-exportados.csv';
+                
+                // Usar tipo MIME específico para garantir reconhecimento como arquivo (não imagem)
+                const blob = new Blob([csv], { 
+                    type: 'text/csv;charset=utf-8'
+                });
+                
+                adicionarLog(`Blob criado: ${blob.size} bytes`, 'info');
+                
+                if (blob.size === 0) {
+                    adicionarLog('ERRO: Blob está vazio!', 'error');
+                    mostrarStatus('exportStatus', '❌ Erro: Blob está vazio', 'error');
+                    return;
+                }
+                
+                // Método compatível com DownloadListener do Android
+                if (typeof navigator !== 'undefined' && navigator.msSaveOrOpenBlob) {
+                    // Para IE/Edge
+                    adicionarLog('Usando msSaveOrOpenBlob (IE/Edge)', 'info');
+                    navigator.msSaveOrOpenBlob(blob, fileName);
+                } else {
+                    // Para Android WebView - usar função auxiliar que força download como arquivo
+                    adicionarLog('Usando método de download padrão', 'info');
+                    forcarDownload(blob, fileName, 'text/csv');
+                }
+                
+                adicionarLog('Exportação CSV concluída', 'success');
+                mostrarStatus('exportStatus', '✅ Arquivo CSV exportado com sucesso!', 'success');
+            } catch (error) {
+                adicionarLog(`Erro ao exportar CSV: ${error.message}`, 'error');
+                adicionarLog(`Stack: ${error.stack}`, 'error');
+                mostrarStatus('exportStatus', '❌ Erro ao exportar CSV: ' + error.message, 'error');
+            }
+        }
+
+        // Função para importar arquivo
+        function importarArquivo(event) {
+            adicionarLog('Iniciando importação de arquivo...', 'debug');
+            
+            const file = event.target.files[0];
+            if (!file) {
+                adicionarLog('Nenhum arquivo selecionado', 'error');
+                mostrarStatus('importStatus', '❌ Nenhum arquivo selecionado', 'error');
+                return;
+            }
+
+            adicionarLog(`Arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+            adicionarLog(`Tipo MIME: ${file.type || 'não especificado'}`, 'info');
+
+            // Validar tamanho do arquivo (máximo 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                adicionarLog(`Arquivo muito grande: ${(file.size / 1024 / 1024).toFixed(2)} MB (máximo 10MB)`, 'error');
+                mostrarStatus('importStatus', '❌ Arquivo muito grande (máximo 10MB)', 'error');
+                return;
+            }
+
+            if (file.size === 0) {
+                adicionarLog('Arquivo está vazio', 'error');
+                mostrarStatus('importStatus', '❌ Arquivo está vazio', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onloadstart = function() {
+                adicionarLog('Iniciando leitura do arquivo...', 'info');
+                mostrarStatus('importStatus', '⏳ Lendo arquivo...', 'info');
+            };
+
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    adicionarLog(`Progresso: ${percent}%`, 'debug');
+                }
+            };
+
+            reader.onload = function(e) {
+                adicionarLog('Arquivo lido com sucesso', 'success');
+                adicionarLog(`Tamanho do conteúdo: ${e.target.result.length} caracteres`, 'info');
+                
+                try {
+                    const content = e.target.result;
+                    
+                    if (!content || content.trim().length === 0) {
+                        adicionarLog('Conteúdo do arquivo está vazio', 'error');
+                        mostrarStatus('importStatus', '❌ Arquivo está vazio ou corrompido', 'error');
+                        return;
+                    }
+
+                    adicionarLog(`Primeiros 100 caracteres: ${content.substring(0, 100)}...`, 'debug');
+                    
+                    if (file.name.endsWith('.json')) {
+                        adicionarLog('Processando como JSON...', 'info');
+                        try {
+                            const dadosImportados = JSON.parse(content);
+                            adicionarLog('JSON parseado com sucesso', 'success');
+                            
+                            // Validar estrutura dos dados
+                            if (!dadosImportados || typeof dadosImportados !== 'object') {
+                                throw new Error('Dados inválidos: não é um objeto JSON válido');
+                            }
+                            
+                            dados = dadosImportados;
+                            atualizarDisplay();
+                            adicionarLog('Dados atualizados com sucesso', 'success');
+                            mostrarStatus('importStatus', '✅ Arquivo JSON importado com sucesso!', 'success');
+                        } catch (parseError) {
+                            adicionarLog(`Erro ao fazer parse do JSON: ${parseError.message}`, 'error');
+                            adicionarLog(`Linha do erro: ${parseError.stack?.split('\n')[1] || 'desconhecida'}`, 'error');
+                            adicionarLog(`Conteúdo problemático: ${content.substring(0, 200)}...`, 'error');
+                            mostrarStatus('importStatus', '❌ Erro ao processar JSON: ' + parseError.message, 'error');
+                        }
+                    } else if (file.name.endsWith('.csv')) {
+                        adicionarLog('Processando como CSV...', 'info');
+                        try {
+                            const linhas = content.split('\n').filter(linha => linha.trim());
+                            adicionarLog(`Total de linhas encontradas: ${linhas.length}`, 'info');
+                            
+                            if (linhas.length < 2) {
+                                throw new Error('CSV deve ter pelo menos cabeçalho e uma linha de dados');
+                            }
+                            
+                            const usuarios = [];
+                            
+                            // Pular cabeçalho e processar linhas
+                            for (let i = 1; i < linhas.length; i++) {
+                                const linha = linhas[i].trim();
+                                
+                                if (linha && !linha.startsWith('Total') && !linha.startsWith('Data')) {
+                                    // Remover aspas e dividir por vírgula
+                                    const valores = linha.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+                                    
+                                    if (valores.length >= 3) {
+                                        usuarios.push({
+                                            id: parseInt(valores[0]) || i,
+                                            nome: valores[1] || '',
+                                            email: valores[2] || ''
+                                        });
+                                        adicionarLog(`Linha ${i} processada: ${valores[1]}`, 'debug');
+                                    } else {
+                                        adicionarLog(`Linha ${i} ignorada: não tem 3 colunas (tem ${valores.length})`, 'warning');
+                                    }
+                                }
+                            }
+                            
+                            adicionarLog(`Usuários processados: ${usuarios.length}`, 'success');
+                            
+                            dados = {
+                                usuarios: usuarios,
+                                total: usuarios.length,
+                                dataExportacao: new Date().toISOString()
+                            };
+                            atualizarDisplay();
+                            adicionarLog('Dados atualizados com sucesso', 'success');
+                            mostrarStatus('importStatus', '✅ Arquivo CSV importado com sucesso!', 'success');
+                        } catch (csvError) {
+                            adicionarLog(`Erro ao processar CSV: ${csvError.message}`, 'error');
+                            adicionarLog(`Stack trace: ${csvError.stack?.split('\n')[0] || 'desconhecido'}`, 'error');
+                            mostrarStatus('importStatus', '❌ Erro ao processar CSV: ' + csvError.message, 'error');
+                        }
+                    } else {
+                        adicionarLog(`Formato de arquivo não reconhecido: ${file.name}`, 'warning');
+                        mostrarStatus('importStatus', '❌ Formato de arquivo não suportado. Use .json ou .csv', 'error');
+                    }
+                } catch (error) {
+                    adicionarLog(`Erro geral ao importar: ${error.message}`, 'error');
+                    adicionarLog(`Tipo do erro: ${error.constructor.name}`, 'error');
+                    adicionarLog(`Stack: ${error.stack?.split('\n').slice(0, 3).join(' | ') || 'desconhecido'}`, 'error');
+                    mostrarStatus('importStatus', '❌ Erro ao importar arquivo: ' + error.message, 'error');
+                }
+            };
+
+            reader.onerror = function(error) {
+                adicionarLog('Erro do FileReader ao ler arquivo', 'error');
+                if (reader.error) {
+                    adicionarLog(`Código do erro: ${reader.error.code}`, 'error');
+                    adicionarLog(`Mensagem: ${reader.error.message || 'desconhecida'}`, 'error');
+                }
+                mostrarStatus('importStatus', '❌ Erro ao ler o arquivo. Verifique os logs abaixo.', 'error');
+            };
+
+            reader.onabort = function() {
+                adicionarLog('Leitura do arquivo foi abortada', 'warning');
+                mostrarStatus('importStatus', '⚠️ Leitura do arquivo foi cancelada', 'error');
+            };
+
+            reader.onloadend = function() {
+                adicionarLog('Leitura do arquivo finalizada', 'info');
+            };
+
+            // Determinar encoding e ler arquivo
+            const fileExtension = file.name.toLowerCase();
+            adicionarLog(`Extensão do arquivo: ${fileExtension}`, 'info');
+            
+            if (fileExtension.endsWith('.json')) {
+                adicionarLog('Lendo como JSON (UTF-8)...', 'info');
+                reader.readAsText(file, 'utf-8');
+            } else if (fileExtension.endsWith('.csv')) {
+                adicionarLog('Lendo como CSV (UTF-8)...', 'info');
+                reader.readAsText(file, 'utf-8');
+            } else {
+                adicionarLog('Extensão não reconhecida', 'warning');
+                mostrarStatus('importStatus', '❌ Formato de arquivo não suportado. Use .json ou .csv', 'error');
+            }
+        }
+
+        // Função para adicionar log de debug na interface
+        function adicionarLog(mensagem, tipo = 'info') {
+            const debugLogs = document.getElementById('debugLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const cores = {
+                'info': '#4fc3f7',
+                'success': '#66bb6a',
+                'error': '#ef5350',
+                'warning': '#ffa726',
+                'debug': '#ab47bc'
+            };
+            const cor = cores[tipo] || cores['info'];
+            const icon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'debug': '🔍'
+            }[tipo] || 'ℹ️';
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '4px';
+            logEntry.style.color = cor;
+            logEntry.innerHTML = `<span style="color: #888;">[${timestamp}]</span> <span style="color: ${cor};">${icon} ${mensagem}</span>`;
+            
+            // Remover mensagem inicial se existir
+            if (debugLogs.children.length === 1 && debugLogs.children[0].style.color === 'rgb(136, 136, 136)') {
+                debugLogs.removeChild(debugLogs.children[0]);
+            }
+            
+            debugLogs.appendChild(logEntry);
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+            
+            // Também logar no console
+            const consoleMethod = tipo === 'error' ? 'error' : tipo === 'warning' ? 'warn' : 'log';
+            console[consoleMethod](`[${timestamp}] ${mensagem}`);
+        }
+
+        // Função para limpar logs
+        function limparLogs() {
+            const debugLogs = document.getElementById('debugLogs');
+            debugLogs.innerHTML = '<div style="color: #888;">Logs limpos. Aguardando ação...</div>';
+            console.clear();
+            adicionarLog('Logs limpos', 'info');
+        }
+
+        // Função para mostrar status
+        function mostrarStatus(elementId, mensagem, tipo) {
+            const statusElement = document.getElementById(elementId);
+            statusElement.textContent = mensagem;
+            statusElement.className = 'status ' + tipo;
+            
+            // Adicionar ao log de debug também
+            adicionarLog(mensagem, tipo);
+            
+            // Limpar status após 5 segundos
+            setTimeout(() => {
+                statusElement.textContent = '';
+                statusElement.className = 'status';
+            }, 5000);
+        }
+
+        // Inicializar display
+        atualizarDisplay();
+    </script>
+</body>
+</html>
